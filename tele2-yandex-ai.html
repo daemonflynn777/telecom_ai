@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tele2 AI</title>
+<style>
+  :root{
+    --bg:#f5f4f0;--card:#ffffff;--red:#CC0000;--ink:#1a1a18;--ink2:#73726c;
+    --track:#e0dfd9;--pill:#f0efeb;--border:#e0dfd9;--radius:16px;--shadow:0 1px 6px rgba(0,0,0,0.06);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#d9d8d3;display:flex;justify-content:center;min-height:100vh;color:var(--ink);}
+  button{font-family:inherit;}
+  .tap:active{opacity:.85;}
+
+  .phone{position:relative;width:390px;height:844px;margin:24px 0;background:#fff;border-radius:48px;box-shadow:0 0 0 12px #111,0 20px 60px rgba(0,0,0,.4);overflow:hidden;}
+  .screen{position:absolute;inset:0;overflow:hidden;display:flex;flex-direction:column;}
+
+  .statusbar{height:54px;flex:0 0 54px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 6px;font-size:15px;font-weight:600;position:relative;z-index:5;}
+  .statusbar .notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:110px;height:30px;background:#111;border-radius:18px;}
+  .statusbar .icons{display:flex;gap:6px;align-items:center;}
+
+  .feed-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;background:#fff;padding-bottom:120px;}
+  .feed-scroll::-webkit-scrollbar{display:none;}
+
+  .header{padding:16px 20px 8px;}
+  .topbar{display:flex;justify-content:flex-end;align-items:center;gap:10px;min-height:44px;margin-bottom:18px;}
+  .balance-pill{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:30px;padding:9px 16px;font-weight:700;font-size:15px;}
+  .balance-pill .t2{font-weight:800;letter-spacing:-.5px;}
+  .balance-pill .divider{width:1px;height:16px;background:var(--border);}
+  .avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#cfcabf,#a8a399);flex:0 0 42px;}
+
+  .state-switch{display:flex;justify-content:center;margin-bottom:18px;}
+  .state-switch .seg{display:inline-flex;background:var(--pill);border:1px solid var(--border);border-radius:22px;padding:3px;gap:2px;}
+  .state-switch button{border:none;background:none;border-radius:18px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;white-space:nowrap;}
+  .state-switch button.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+
+  .logo-tri{margin-bottom:14px;}
+  .hi{font-size:34px;line-height:1.05;font-weight:800;letter-spacing:-1px;margin:0 0 24px;}
+
+  .prompt-rows{padding:0 20px;display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+  .prow-scroll{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
+  .prow-scroll::-webkit-scrollbar{display:none;}
+  .prompt{flex:0 0 auto;background:#f0efeb;border:1px solid #e0dfd9;color:#1a1a18;border-radius:20px;padding:8px 14px;font-size:14px;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:7px;cursor:pointer;}
+  .prompt .arr{color:#CC0000;font-weight:700;}
+
+  .telecom-slot{padding:0 20px;}
+  .tariff{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px;}
+  .tariff.urgent{background:#FFF0F0;border:1.5px solid #CC0000;}
+  .tariff .warn{color:#CC0000;font-size:12px;font-weight:700;line-height:1.35;margin-bottom:12px;}
+  .tariff .cap{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink2);}
+  .tariff .name{font-size:20px;font-weight:800;margin:4px 0 16px;letter-spacing:-.5px;}
+  .tline{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:14px;font-weight:600;}
+  .tline .ic{width:20px;text-align:center;font-size:16px;flex:0 0 20px;}
+  .tline .lbl{flex:0 0 auto;min-width:118px;}
+  .tline .lbl.red{color:#CC0000;font-weight:800;}
+  .bar{flex:1;height:5px;background:var(--track);border-radius:4px;overflow:hidden;}
+  .bar>span{display:block;height:100%;background:var(--red);border-radius:4px;}
+  .tline.inf .lbl{min-width:0;}.tline.inf .ic{font-size:18px;}
+
+  .feed-section{background:var(--bg);padding:16px;min-height:420px;}
+  .feed{column-count:2;column-gap:12px;}
+  .fcard{break-inside:avoid;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;display:inline-block;width:100%;}
+  .fcard.pad{padding:16px;}
+  .link-red{color:var(--red);font-weight:700;font-size:15px;}
+  .media{position:relative;min-height:230px;background-size:cover;background-position:center;display:flex;flex-direction:column;justify-content:flex-end;padding:14px;color:#fff;}
+  .media::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(0,0,0,.75));}
+  .media>*{position:relative;z-index:1;}
+  .badge{align-self:flex-start;background:var(--red);color:#fff;font-size:12px;font-weight:700;padding:5px 11px;border-radius:20px;margin-bottom:10px;}
+  .media-title{font-size:16px;font-weight:700;line-height:1.25;}
+  .media .lbl-min{font-size:13px;font-weight:600;opacity:.9;margin-bottom:4px;}
+  .media .sub{font-size:12px;opacity:.75;margin-top:8px;}
+  .weather{padding:16px;background:linear-gradient(135deg,#dbeafe 0%,#eef3f6 55%,#fdf6dd 100%);position:relative;overflow:hidden;}
+  .weather .deg{font-size:44px;font-weight:800;line-height:1;letter-spacing:-2px;}
+  .weather .cond{font-size:14px;font-weight:600;margin-top:6px;}
+  .weather .city,.weather .range{font-size:13px;color:var(--ink2);font-weight:600;}
+  .weather .city{margin-top:22px;}
+  .weather .sun{position:absolute;top:14px;right:14px;font-size:30px;}
+  .food{padding:16px;text-align:center;}
+  .food .ph{width:110px;height:110px;border-radius:50%;margin:0 auto 12px;background-size:cover;background-position:center;}
+  .food .lbl{color:var(--red);font-size:11px;font-weight:700;}
+  .food .q{font-size:16px;font-weight:700;margin-top:4px;line-height:1.25;}
+
+  /* FIX 3 — promo card */
+  .promo-card{padding:16px;border-left:4px solid var(--red);position:relative;}
+  .promo-card .pl{color:var(--red);font-size:12px;font-weight:700;}
+  .promo-card .pt{font-size:17px;font-weight:800;line-height:1.2;margin:6px 0;}
+  .promo-card .ps{font-size:13px;color:var(--ink2);line-height:1.35;margin-bottom:10px;}
+  .promo-card .pb{background:none;border:none;color:var(--red);font-weight:700;font-size:14px;padding:0;cursor:pointer;}
+  .promo-card .t2mini{position:absolute;right:12px;bottom:12px;font-size:10px;font-weight:800;letter-spacing:-.5px;color:var(--ink);}
+  .promo-card.blue{border-left-color:#2d7fff;background:linear-gradient(135deg,#eaf2ff,#fff);}
+  .promo-card.blue .pl{color:#2d7fff;}
+  .promo-card .pprice{font-size:17px;font-weight:800;margin-bottom:8px;}
+
+  /* CHANGE 2 — product cards */
+  .product-card{cursor:pointer;}
+  .product-card .pimg{background:#f0efeb;height:120px;display:flex;align-items:center;justify-content:center;font-size:54px;}
+  .product-card .pinfo{padding:12px 14px 14px;}
+  .product-card .pcat{color:var(--red);font-size:11px;font-weight:700;}
+  .product-card .pname{font-size:15px;font-weight:800;line-height:1.2;margin:4px 0 6px;}
+  .product-card .pprice{font-size:17px;font-weight:800;}
+  .product-card .pinst{font-size:11px;color:var(--ink2);margin-top:4px;}
+
+  .omnibox{position:absolute;left:0;right:0;bottom:0;padding:10px 16px 26px;background:linear-gradient(180deg,rgba(245,244,240,0) 0%,var(--bg) 42%);z-index:10;}
+  .omni-bar{background:var(--card);border:1px solid var(--border);border-radius:34px;box-shadow:0 4px 20px rgba(0,0,0,.10);display:flex;align-items:center;gap:14px;padding:14px 20px;min-height:52px;cursor:text;}
+  .omni-bar .ph{flex:1;color:var(--ink2);font-size:16px;}
+  .iconbtn{background:none;border:none;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);}
+
+  .chat{position:absolute;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s ease;}
+  .chat.open{transform:translateY(0);}
+  .chat-head{flex:0 0 auto;padding:54px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--bg);}
+  .chat-head .title{flex:1;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;}
+  .chat-head .round{width:38px;height:38px;border-radius:50%;background:var(--pill);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .chat-body{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;}
+  .chat-body::-webkit-scrollbar{display:none;}
+
+  .msg{margin-bottom:12px;display:flex;flex-direction:column;max-width:100%;}
+  .msg.user{align-items:flex-end;}.msg.ai{align-items:flex-start;}
+  .bubble{font-size:15px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word;}
+  .msg.user .bubble{background:#f0f0f0;color:var(--ink);border-radius:18px 18px 4px 18px;padding:10px 14px;max-width:75%;}
+  .msg.ai .bubble{background:#fff;color:var(--ink);border:1px solid #ebebeb;border-radius:18px 18px 18px 4px;padding:12px 14px;max-width:85%;}
+  .bubble b{font-weight:800;}
+
+  .actions{display:flex;gap:8px;margin:8px 2px 2px;align-items:center;color:var(--ink2);font-size:15px;}
+  .actions .act{cursor:pointer;}
+  .actions .dot{font-size:11px;}
+  .actions .attr{font-size:11px;font-weight:700;color:var(--ink2);}
+
+  .thinking{display:flex;align-items:center;gap:4px;font-style:italic;color:var(--ink2);font-size:14px;padding:8px 2px;}
+  .thinking .dot{display:inline-block;animation:thinking 1.2s infinite;}
+  .thinking .dot:nth-child(2){animation-delay:.2s;}
+  .thinking .dot:nth-child(3){animation-delay:.4s;}
+  @keyframes thinking{0%,60%,100%{opacity:.2;transform:scale(.8);}30%{opacity:1;transform:scale(1);}}
+
+  .aibtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;max-width:90%;}
+  .aibtn{background:var(--pill);border:1px solid var(--border);border-radius:20px;padding:9px 14px;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink);}
+
+  .action-card{display:flex;flex-direction:column;gap:8px;margin-top:12px;max-width:92%;}
+
+  .escal{border:1.5px solid #CC0000;border-radius:12px;background:#FFF8F8;padding:14px 16px;margin-top:12px;max-width:92%;}
+  .escal .e1{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;}
+  .escal .e2{color:var(--ink2);font-size:12px;margin:6px 0 12px;line-height:1.4;}
+  .escal .e3{width:100%;background:#CC0000;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;}
+
+  .disclaimer{display:flex;gap:10px;background:#f5f4f0;border-radius:12px;padding:12px 14px;font-size:12px;color:var(--ink2);line-height:1.45;margin-top:12px;max-width:92%;}
+  .disclaimer .gear{flex:0 0 auto;}
+  .disclaimer b{color:var(--ink);font-weight:700;}
+
+  .errcard{background:#fff;border:1px solid #ebebeb;border-radius:18px 18px 18px 4px;padding:12px 14px;max-width:88%;}
+  .errcard .det{font-size:11px;color:var(--ink2);margin-top:6px;word-break:break-word;font-family:ui-monospace,Menlo,monospace;}
+  .retry{margin-top:10px;background:var(--ink);color:#fff;border:none;border-radius:20px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;}
+
+  .toast{position:absolute;left:50%;bottom:36px;transform:translateX(-50%) translateY(20px);background:#1a1a18;color:#fff;border-radius:8px;padding:14px 18px;font-size:14px;font-weight:600;max-width:330px;text-align:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;box-shadow:0 8px 30px rgba(0,0,0,.3);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .chat-input{flex:0 0 auto;padding:8px 12px 26px;background:#fff;border-top:1px solid var(--border);}
+  .chat-input .bar{display:flex;align-items:center;gap:10px;min-height:56px;padding:0 6px;}
+  .chat-input input{flex:1;border:none;outline:none;background:none;font-size:16px;font-family:inherit;color:var(--ink);padding:10px 0;}
+  .chat-input input::placeholder{color:var(--ink2);}
+  .send{width:36px;height:36px;border-radius:50%;background:var(--red);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 36px;}
+
+  .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:60;opacity:0;pointer-events:none;transition:opacity .3s;}
+  .backdrop.open{opacity:1;pointer-events:auto;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:61;background:var(--card);border-radius:24px 24px 0 0;transform:translateY(100%);transition:transform .34s cubic-bezier(.32,.72,0,1);max-height:84%;display:flex;flex-direction:column;}
+  .sheet.open{transform:translateY(0);}
+  .sheet .handle{width:40px;height:5px;border-radius:3px;background:var(--track);margin:10px auto 4px;flex:0 0 auto;}
+  .sheet .sheet-title{font-size:22px;font-weight:800;padding:10px 22px 2px;letter-spacing:-.5px;flex:0 0 auto;}
+  .sheet .sheet-sub{font-size:13px;color:var(--ink2);padding:0 22px 8px;flex:0 0 auto;}
+  .sheet .sheet-body{overflow-y:auto;padding:6px 16px 30px;}
+  .sheet .sheet-body::-webkit-scrollbar{display:none;}
+  .grp-title{font-size:13px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px;margin:16px 8px 6px;}
+  .skill-row{display:flex;align-items:center;gap:14px;padding:13px 10px;border-radius:12px;cursor:pointer;font-size:16px;font-weight:500;}
+  .skill-row:active{background:var(--pill);}
+  .skill-row .se{font-size:20px;width:24px;text-align:center;}
+  .skill-row.locked{opacity:.4;cursor:not-allowed;}
+  .skill-row.locked .se{filter:grayscale(1);}
+
+  /* ===== Modal (forms + product detail) ===== */
+  .modal-back{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:69;opacity:0;pointer-events:none;transition:opacity .3s;}
+  .modal-back.open{opacity:1;pointer-events:auto;}
+  .modal{position:absolute;left:0;right:0;bottom:0;top:34px;z-index:70;background:#fff;border-radius:22px 22px 0 0;transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden;}
+  .modal.full{top:0;border-radius:0;}
+  .modal.open{transform:translateY(0);}
+  .modal-inner{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+  .modal-inner::-webkit-scrollbar{display:none;}
+  .handle-bar{width:40px;height:5px;border-radius:3px;background:var(--track);margin:10px auto 2px;flex:0 0 auto;}
+  .m-head{display:flex;align-items:center;justify-content:space-between;padding:6px 12px 8px;border-bottom:1px solid var(--border);flex:0 0 auto;}
+  .m-back{background:none;border:none;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;}
+  .m-title{font-size:17px;font-weight:700;}
+  .m-body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1;}
+  .field{background:#f5f5f5;border-radius:14px;padding:14px 16px;}
+  .f-label{color:var(--ink2);font-size:13px;margin-bottom:4px;}
+  .f-val{font-size:17px;font-weight:600;}
+  .f-row{display:flex;align-items:center;justify-content:space-between;}
+  .f-ic{font-size:18px;}
+  .f-hint{color:var(--ink2);font-size:12px;margin:-4px 4px 2px;}
+  .f-input{border:none;background:none;outline:none;font-size:17px;font-family:inherit;width:100%;color:var(--ink);}
+  .pills{display:flex;gap:8px;flex-wrap:wrap;}
+  .amt-pill{background:#f0efeb;border:1px solid var(--border);border-radius:20px;padding:9px 14px;font-size:14px;font-weight:600;cursor:pointer;}
+  .f-select{display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+  .chev{color:var(--ink2);font-size:18px;}
+  .info-line{display:flex;justify-content:space-between;font-size:15px;padding:8px 4px;border-bottom:1px solid #f0efeb;}
+  .info-line span{color:var(--ink2);}
+  .primary-btn{margin-top:auto;width:100%;border:none;border-radius:26px;padding:16px;font-size:16px;font-weight:700;background:#cfcdc7;color:#fff;cursor:not-allowed;}
+  .primary-btn.active{background:var(--red);color:#fff;cursor:pointer;}
+  .m-body.success{align-items:center;text-align:center;justify-content:center;gap:16px;}
+  .check{width:64px;height:64px;border-radius:50%;background:#e7f7ec;color:#1a8f3c;font-size:32px;display:flex;align-items:center;justify-content:center;}
+  .s-title{font-size:20px;font-weight:800;}
+  .dark-btn{background:var(--ink);color:#fff;border:none;border-radius:24px;padding:13px 18px;font-size:14px;font-weight:700;cursor:pointer;}
+  .ghost-btn{background:none;border:1px solid var(--border);border-radius:24px;padding:13px 18px;font-size:14px;font-weight:700;cursor:pointer;color:var(--ink);}
+
+  /* product detail */
+  .pd-top{display:flex;justify-content:space-between;padding:50px 16px 6px;flex:0 0 auto;}
+  .pd-top button{width:38px;height:38px;border-radius:50%;background:var(--pill);border:none;font-size:18px;cursor:pointer;}
+  .pd-image{font-size:96px;text-align:center;padding:14px;}
+  .pd-dots{display:flex;gap:6px;justify-content:center;margin-bottom:14px;}
+  .pd-dots .d{width:6px;height:6px;border-radius:50%;background:var(--track);}
+  .pd-dots .d.on{background:var(--ink);}
+  .pd-body{padding:0 18px 16px;flex:1;}
+  .pd-name{font-size:22px;font-weight:800;letter-spacing:-.5px;}
+  .inst-badge{display:inline-block;background:#FFDD2D;color:#1a1a18;font-size:12px;font-weight:700;border-radius:8px;padding:5px 10px;margin-top:10px;}
+  .pd-sec{font-size:15px;font-weight:800;margin:18px 0 10px;}
+  .pd-sub{font-size:13px;color:var(--ink2);margin-bottom:8px;}
+  .color-row{display:flex;gap:12px;}
+  .color{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);cursor:pointer;}
+  .color.sel{box-shadow:0 0 0 2px #fff,0 0 0 4px #2d7fff;}
+  .store-row,.contract-row{display:flex;gap:8px;}
+  .store-pill,.contract{border:1px solid var(--border);background:#fff;border-radius:12px;padding:10px 16px;font-weight:700;font-size:14px;cursor:pointer;}
+  .store-pill.sel,.contract.sel{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .contract{flex:1;text-align:center;}
+  .tariff-scroll{display:flex;gap:12px;overflow-x:auto;margin-top:14px;scrollbar-width:none;}
+  .tariff-scroll::-webkit-scrollbar{display:none;}
+  .tcard-blue{flex:0 0 230px;border-radius:16px;overflow:hidden;border:1px solid var(--border);}
+  .tcb-head{background:#1b2b5e;color:#fff;font-weight:700;font-size:14px;padding:12px 14px;display:flex;justify-content:space-between;}
+  .tcb-body{padding:14px;}
+  .tcb-specs{font-weight:800;font-size:15px;}
+  .tcb-type{color:var(--ink2);font-size:13px;margin:6px 0;}
+  .tcb-price{font-size:18px;font-weight:800;}
+  .pd-foot{padding:12px 16px 28px;border-top:1px solid var(--border);flex:0 0 auto;}
+  .pd-foot .dark-btn{width:100%;border-radius:26px;padding:16px;font-size:16px;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="screen">
+
+    <div class="statusbar">
+      <div class="notch"></div>
+      <div class="time">18:13</div>
+      <div class="icons">
+        <svg width="18" height="13" viewBox="0 0 18 13" fill="#1a1a18"><rect x="0" y="9" width="3" height="4" rx="1"/><rect x="5" y="6" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="13" rx="1"/></svg>
+        <svg width="17" height="13" viewBox="0 0 17 13" fill="#1a1a18"><path d="M8.5 2C5.4 2 2.6 3.2.5 5.2l1.4 1.5C3.7 5 6 4 8.5 4s4.8 1 6.6 2.7L16.5 5.2C14.4 3.2 11.6 2 8.5 2z"/><path d="M8.5 6.3c-1.7 0-3.3.7-4.5 1.8l1.5 1.5c.8-.8 1.9-1.3 3-1.3s2.2.5 3 1.3l1.5-1.5c-1.2-1.1-2.8-1.8-4.5-1.8z"/><circle cx="8.5" cy="11" r="1.6"/></svg>
+        <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".5" y=".5" width="22" height="12" rx="3.5" stroke="#1a1a18" opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="2" fill="#1a1a18"/><rect x="24" y="4" width="2" height="5" rx="1" fill="#1a1a18" opacity=".4"/></svg>
+      </div>
+    </div>
+
+    <div class="feed-scroll" id="feedScroll">
+      <div class="header">
+        <div class="topbar" id="topbar"></div>
+
+        <div class="state-switch">
+          <div class="seg" id="stateSwitch">
+            <button data-state="A">👤 Гость</button>
+            <button data-state="C">✅ Клиент Tele2</button>
+          </div>
+        </div>
+
+        <div class="logo-tri">
+          <svg width="50" height="45" viewBox="0 0 58 52" fill="none">
+            <defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF6B6B"/><stop offset="1" stop-color="#CC0000"/></linearGradient></defs>
+            <path d="M29 6 C31 6 33 7.5 34 9.5 L50 39 C52 43 49.5 47 45 47 L13 47 C8.5 47 6 43 8 39 L24 9.5 C25 7.5 27 6 29 6 Z" stroke="url(#grad)" stroke-width="5" fill="none" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h1 class="hi" id="greeting"></h1>
+      </div>
+
+      <div class="prompt-rows" id="promptRows"></div>
+      <div class="telecom-slot" id="telecomSlot"></div>
+
+      <div class="feed-section">
+        <div class="feed" id="feed">
+          <!-- FIX 3: Tele2 promo replaces the old news card -->
+          <div class="fcard promo-card">
+            <div class="pl">🎉 Акция</div>
+            <div class="pt">Домашний интернет за 2 990 ₸/мес</div>
+            <div class="ps">Подключите до 30 июня и получите первый месяц бесплатно</div>
+            <button class="pb tap" data-promo="home">Узнать подробнее →</button>
+            <div class="t2mini">TELE2</div>
+          </div>
+
+          <div class="fcard media" style="background-image:url('https://images.unsplash.com/photo-1551817958-d9d86fb29431?w=600&q=70')"><span class="badge">Daily Brief</span><div class="media-title">Внутри датского военного корабля, патрулирующего…</div></div>
+
+          <!-- product -->
+          <div class="fcard product-card" data-product="a07">
+            <div class="pimg">📱</div>
+            <div class="pinfo"><div class="pcat">магазин</div><div class="pname">Galaxy A07 4/64GB Black</div><div class="pprice">59 990 ₸</div><div class="pinst">Рассрочка от 2 500 ₸ × 24</div></div>
+          </div>
+
+          <div class="fcard weather"><span class="sun">⛅</span><div class="deg">8°</div><div class="cond">Облачно, ощущается как 4°</div><div class="city">Алматы</div><div class="range">день 12° · ночь 8°</div></div>
+
+          <!-- product -->
+          <div class="fcard product-card" data-product="ip15">
+            <div class="pimg">📱</div>
+            <div class="pinfo"><div class="pcat">магазин</div><div class="pname">iPhone 15 256GB Black</div><div class="pprice">536 990 ₸</div><div class="pinst">Рассрочка от 22 375 ₸ × 24</div></div>
+          </div>
+
+          <div class="fcard media" style="background-image:linear-gradient(180deg,rgba(120,10,10,.35),rgba(40,0,0,.6)),url('https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=70');min-height:300px;"><div class="lbl-min">music</div><div class="media-title">Radiohead анонсировали новый концерт в Алматы этой весной</div><div class="sub">создано 1 ч назад</div></div>
+
+          <!-- promo product (blue tint) -->
+          <div class="fcard promo-card blue" data-promo="testdrive">
+            <div class="pl">магазин</div>
+            <div class="pt">Тест-драйв домашнего интернета</div>
+            <div class="pprice">3 000 ₸</div>
+            <button class="pb tap" style="color:#2d7fff">Подробнее →</button>
+          </div>
+
+          <div class="fcard food"><div class="ph" style="background-image:url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=70')"></div><div class="lbl">ask ai · еда</div><div class="q">найти отличное место поесть</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="omnibox">
+      <div class="omni-bar" id="omniBar">
+        <button class="iconbtn" aria-label="attach"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a1a18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 11.05 12.25 20.2a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-8.49 8.49a1 1 0 0 1-1.41-1.41l7.78-7.78"/></svg></button>
+        <span class="ph">спросить что угодно</span>
+        <button class="iconbtn" aria-label="mic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a1a18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button>
+        <button class="iconbtn" aria-label="camera"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a1a18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M8 6l1.5-3h5L16 6"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+      </div>
+    </div>
+
+    <!-- Chat overlay -->
+    <div class="chat" id="chat">
+      <div class="chat-head">
+        <div class="round tap" id="chatBack"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <div class="title"><svg width="22" height="20" viewBox="0 0 58 52" fill="none"><path d="M29 6 C31 6 33 7.5 34 9.5 L50 39 C52 43 49.5 47 45 47 L13 47 C8.5 47 6 43 8 39 L24 9.5 C25 7.5 27 6 29 6 Z" stroke="url(#grad)" stroke-width="6" fill="none" stroke-linejoin="round"/></svg> Tele2 AI</div>
+        <div class="round tap" id="newChat" title="новый чат"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a18" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></div>
+        <div class="round tap" title="меню"><svg width="20" height="20" viewBox="0 0 24 24" fill="#1a1a18"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></div>
+      </div>
+      <div class="chat-body" id="chatBody"></div>
+      <div class="chat-input">
+        <div class="bar">
+          <button class="iconbtn tap" id="chatHome" aria-label="home"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a1a18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg></button>
+          <button class="iconbtn" aria-label="attach"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a1a18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 11.05 12.25 20.2a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-8.49 8.49a1 1 0 0 1-1.41-1.41l7.78-7.78"/></svg></button>
+          <input id="chatInput" type="text" placeholder="задать уточняющий вопрос" autocomplete="off">
+          <button class="iconbtn" aria-label="mic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a1a18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg></button>
+          <button class="send tap" id="sendBtn" aria-label="send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills sheet -->
+    <div class="backdrop" id="backdrop"></div>
+    <div class="sheet" id="sheet">
+      <div class="handle"></div>
+      <div class="sheet-title">Что умеет Tele2 AI</div>
+      <div class="sheet-sub">Спросите любыми словами — пойму</div>
+      <div class="sheet-body" id="sheetBody"></div>
+    </div>
+
+    <!-- Modal (forms + product detail) -->
+    <div class="modal-back" id="modalBack"></div>
+    <div class="modal" id="modal"><div class="modal-inner" id="modalInner"></div></div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ===================== STATE ===================== */
+  let userState = 'C';          // 'A' guest | 'C' client   (CHANGE 1: state B removed)
+  let messages = [];
+  let lastNeg = false;
+
+  // daysLeft = 4 → neutral block. Set to 2 for red urgent state. Set to 5+ to hide block.
+  const daysLeft = 4;
+
+  const $ = id => document.getElementById(id);
+  const chat=$('chat'), chatBody=$('chatBody'), chatInput=$('chatInput'),
+        sheet=$('sheet'), backdrop=$('backdrop'), toast=$('toast'),
+        modal=$('modal'), modalInner=$('modalInner'), modalBack=$('modalBack');
+
+  const backSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a1a18" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>`;
+
+  /* ===================== Per-state config ===================== */
+  const CONFIG = {
+    A:{ greeting:"Привет! Это<br>Tele2 AI", topbar:"",
+        row1:["какой тариф выбрать","как перенести номер","что такое eSIM"],
+        row2:["в чём смысл жизни","как дела","💡 все навыки"] },
+    C:{ greeting:"Привет, Алибек! 👋",
+        topbar:`<div class="balance-pill"><span class="t2">TELE2</span><span class="divider"></span><span>2 960 ₸</span></div><div class="avatar"></div>`,
+        row1:["пополнить баланс","мой тариф","куда ушли деньги"],
+        row2:["роуминг","в чём смысл жизни","💡 все навыки"] }
+  };
+
+  /* ===================== Render main ===================== */
+  function renderMain(){
+    const c = CONFIG[userState];
+    $('greeting').innerHTML = c.greeting;
+    $('topbar').innerHTML = c.topbar;
+    [...$('stateSwitch').children].forEach(b=>b.classList.toggle('active', b.dataset.state===userState));
+    $('promptRows').innerHTML =
+      `<div class="prow-scroll">${c.row1.map(pillHTML).join('')}</div>`+
+      `<div class="prow-scroll">${c.row2.map(pillHTML).join('')}</div>`;
+    renderTelecom();
+    renderSheet();
+  }
+  function pillHTML(label){
+    const skills = label.includes('все навыки');
+    return `<button class="prompt tap" data-${skills?'skills="1"':'text="'+escAttr(label)+'"'}>${esc(label)} <span class="arr">→</span></button>`;
+  }
+  function renderTelecom(){
+    const slot=$('telecomSlot');
+    if(userState!=='C' || daysLeft>4){ slot.innerHTML=''; return; }
+    const urgent = daysLeft<=2;
+    const warn = urgent? `<div class="warn">⚠️ Тариф заканчивается скоро! Продлите, чтобы не потерять связь.</div>`:'';
+    slot.innerHTML = `<div class="tariff ${urgent?'urgent':''}">${warn}
+      <div class="cap">ваш тариф</div>
+      <div class="name">Полностью безлимитный</div>
+      <div class="tline"><span class="ic">📶</span><span class="lbl ${urgent?'red':''}">26 из 30 дней</span><span class="bar"><span style="width:87%"></span></span></div>
+      <div class="tline"><span class="ic">📞</span><span class="lbl">198 из 250 минут</span><span class="bar"><span style="width:79%"></span></span></div>
+      <div class="tline inf"><span class="ic">∞</span><span class="lbl">безлимитный интернет</span></div>
+    </div>`;
+  }
+
+  /* ===================== Bottom sheet ===================== */
+  const SHEET=[
+    {title:"Управление счётом", account:true, items:[
+      ["💳","Пополнить баланс"],["📋","История транзакций"],["🔄","Автопополнение"],["🆘","Доверительный платёж"]]},
+    {title:"Тарифы и подключение", items:[
+      ["📦","Подобрать тариф"],["➕","Подключить услугу"],["📱","Перенести номер в Tele2"],["💳","Получить eSIM"]]},
+    {title:"Помощь", items:[
+      ["❓","Почему не работает интернет"],["🌍","Настроить роуминг"],["🔍","Верификация IMEI"],["💬","Связаться с поддержкой"]]},
+    {title:"Просто поговорить", items:[
+      ["😄","Как дела?"],["🤔","В чём смысл жизни?"],["🍕","Что приготовить на ужин?"],["📚","Расскажи про Аристотеля"]]}
+  ];
+  function renderSheet(){
+    $('sheetBody').innerHTML = SHEET.map(g=>{
+      const locked = g.account && userState!=='C';
+      return `<div class="grp-title">${esc(g.title)}</div>`+
+        g.items.map(([e,t])=>`<div class="skill-row ${locked?'locked':''}" ${locked?'title="доступно клиентам Tele2"':'data-text="'+escAttr(t)+'"'}><span class="se">${e}</span>${esc(t)}</div>`).join('');
+    }).join('');
+  }
+
+  /* ===================== System prompt (A / C only) ===================== */
+  function buildSystemPrompt(state){
+    const base = `Ты — Tele2 AI, умный ассистент в приложении Tele2 Казахстан, powered by Yandex AI.
+
+Ты можешь отвечать на ЛЮБЫЕ вопросы — про жизнь, философию, погоду, историю, кулинарию, что угодно. Ты универсальный помощник.
+
+НО: если вопрос касается мобильной связи, тарифов, баланса, интернета, роуминга, SIM-карт — ты отвечаешь как эксперт Tele2 с доступом к данным пользователя.
+
+Стиль общения:
+- Дружелюбный, живой, без корпоративного официоза
+- Короткие абзацы, не лей воду
+- Используй эмодзи умеренно — только где уместно
+- Если можешь решить проблему действием (кнопка, карточка) — предложи, не просто объясняй
+- Отвечай на языке пользователя (русский/казахский/английский)
+
+Когда уместно предложить выбор из вариантов — добавляй в конце ответа отдельной строкой маркер:
+BUTTONS: ["вариант 1", "вариант 2", "вариант 3"]
+Не более 4 вариантов, текст кнопок короткий.
+
+Tele2 Казахстан — тарифы (актуальные цены):
+
+1. БЕЗЛИМИТ ПО ПОЛНОЙ — 5 790 ₸/30 дней (скидка 6 мес для новых), потом 7 990 ₸. Безлимит интернет 5G/4G/3G + роуминг, безлимит звонки на Tele2 и Altel, 250 минут на другие номера РК. Для тех, кому нужна максимальная скорость и поездки за рубеж.
+2. БЕЗЛИМИТ ДЛЯ ВСЕХ — 3 790 ₸/30 дней (скидка 6 мес), потом 5 990 ₸. Безлимит интернет 5G/4G/3G (без роуминга), безлимит звонки на Tele2 и Altel, 100 минут на другие номера РК. Для видео HD и соцсетей.
+3. БЕЗЛИМИТ ДЛЯ СВОИХ — 99 ₸/сутки (скидка 6 мес), потом 190 ₸/сутки (~3 000 ₸/мес). Безлимит 5G + WhatsApp, Telegram, Aitu, безлимит звонки только внутри Tele2. Минимальный бюджет, общение в мессенджерах.
+
+Скидки действуют только для новых клиентов Tele2.
+
+FAQ: перенос номера (MNP) — заявка в офисе/на сайте, номер сохраняется, ~1 рабочий день. eSIM — в приложении или офисе. Роуминг — включается автоматически при въезде, если тариф с роумингом. Доверительный платёж — связь при нулевом балансе, возвращается при пополнении. Поддержка: 611, WhatsApp +7 707 000 07 07, Telegram @Tele2Kazakhstan_bot.`;
+
+    const A = `СОСТОЯНИЕ ПОЛЬЗОВАТЕЛЯ: Гость, не авторизован, неизвестно является ли клиентом Tele2.
+
+Цель: помочь разобраться с тарифами и стать клиентом Tele2, если уместно. Не навязывай.
+
+Если спрашивают про тариф или "что выбрать" — запусти умный онбординг: максимум 3 вопроса по одному, с вариантами через маркер BUTTONS. После 3 вопросов — конкретная рекомендация одного тарифа с обоснованием.
+
+Если пользователь говорит "дорого", "слишком дорого", "капец дорого", "есть дешевле", "нет денег" — предложи более дешёвый тариф, объясни что теряет и что сохраняет. Если снова "дорого" — предложи самый дешёвый (99 ₸/день).
+
+У тебя НЕТ данных о балансе, тарифе или истории этого пользователя.`;
+
+    const C = `СОСТОЯНИЕ ПОЛЬЗОВАТЕЛЯ: Авторизованный клиент Tele2.
+
+Данные аккаунта:
+- Имя: Алибек, Номер: +7 701 234 56 78
+- Баланс: 2 960 ₸
+- Текущий тариф: Безлимит по полной
+- Осталось дней: 4, Минуты: использовано 198 из 250, Интернет: безлимитный
+
+Последние транзакции:
+- 27 апр 13:20 — Звонок за рубеж +1 646 559-480-78 — 200 ₸ (01:15)
+- 2 апр 12:00 — Оплата App Store — 460 ₸
+- 2 мар 12:00 — Оплата App Store — 460 ₸
+
+Цель: помочь управлять аккаунтом, отвечать по тарифу, балансу, услугам. Можешь проактивно напомнить что тариф заканчивается через 4 дня если уместно.
+
+Если спрашивают про пополнение — укажи что 2 960 ₸ хватает впритык для платежа 2 830 ₸, но лучше пополнить заранее, и предложи: BUTTONS: ["2 830 ₸", "5 000 ₸", "10 000 ₸"]`;
+
+    return base + "\n\n" + (state==='A'?A:C);
+  }
+
+  /* ===================== API via local proxy ===================== */
+  async function sendToAI(history, state){
+    const res = await fetch("/api/messages", {
+      method:"POST", headers:{ "content-type":"application/json" },
+      body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:1000, system:buildSystemPrompt(state), messages:history })
+    });
+    const rawText = await res.text();
+    let data;
+    try { data = JSON.parse(rawText); }
+    catch(e){ throw new Error("Не удалось разобрать ответ сервера (HTTP "+res.status+"): "+rawText.slice(0,400)); }
+    if(!res.ok){
+      const m = data && data.error && (data.error.message || data.error.detail || data.error);
+      throw new Error("HTTP "+res.status+" — "+(typeof m==='string'? m : JSON.stringify(m||data)));
+    }
+    if(!data.content || !data.content[0] || typeof data.content[0].text!=='string')
+      throw new Error("Пустой ответ модели: "+rawText.slice(0,400));
+    return data.content[0].text;
+  }
+
+  /* ===================== Helpers ===================== */
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function escAttr(s){return esc(s).replace(/"/g,'&quot;');}
+  function fmt(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');}
+  function scrollDown(){ chatBody.scrollTop = chatBody.scrollHeight; }
+  function fmtNum(n){ return n.toLocaleString('ru-RU').replace(/,/g,' '); }
+
+  const NEG = ["тупой","тупая","не понял","не помогаешь","бесполезный","идиот","ужасно","отстой","дурак"];
+  function isNegative(t){const s=t.toLowerCase();return NEG.some(w=>s.includes(w));}
+  function attrFor(text){ return /тариф|баланс|минут|tele2|роуминг|интернет|esim|сим-карт|симкарт|пополн/i.test(text)?'≡ Tele2':'≡ Tele2 AI'; }
+
+  // FIX 2 — disclaimer for partner-dependent topics
+  function needsDisclaimer(text){ return /баланс|пополн|транзакц|перенос номер|sim|esim|автопополн/i.test(text); }
+  function disclaimerHTML(t){ return `<div class="disclaimer"><span class="gear">⚙️</span><div>${fmt(t)}</div></div>`; }
+  const FIX2_DISC = "**Для этой функции нужна интеграция с Tele2**\nПолная реализация потребует подключения к API партнёра.";
+
+  /* ===================== Chat rendering ===================== */
+  function addUser(text){
+    const m=document.createElement('div'); m.className='msg user';
+    m.innerHTML=`<div class="bubble">${fmt(text)}</div>`;
+    chatBody.appendChild(m); scrollDown();
+  }
+  function actionsRow(attr){
+    return `<div class="actions"><span class="act" title="нравится">👍</span><span class="act" title="не нравится">👎</span><span class="act" title="повторить">🔁</span><span class="act" title="поделиться">↗</span><span class="dot">·</span><span class="attr">${esc(attr)}</span></div>`;
+  }
+  function escalHTML(){
+    return `<div class="escal"><div class="e1">👤 Подключить живого оператора</div><div class="e2">Передам ваш вопрос специалисту Tele2. Обычно отвечают за 2–5 минут.</div><button class="e3 tap escalBtn">Написать оператору</button></div>`;
+  }
+  function showThinking(){
+    const m=document.createElement('div'); m.className='msg ai';
+    m.innerHTML=`<div class="thinking">Tele2 AI думает<span class="dot">●</span><span class="dot">●</span><span class="dot">●</span></div>`;
+    chatBody.appendChild(m); scrollDown(); return m;
+  }
+
+  // generic AI bubble with custom scripted buttons [{label, fn}]
+  function addBubbleButtons(text, attr, buttons, extraHTML){
+    const el=document.createElement('div'); el.className='msg ai';
+    let html=`<div class="bubble">${fmt(text)}</div>`;
+    if(buttons && buttons.length) html+=`<div class="aibtns">`+buttons.map((b,i)=>`<button class="aibtn tap" data-i="${i}">${esc(b.label)}</button>`).join('')+`</div>`;
+    if(extraHTML) html+=extraHTML;
+    html+=actionsRow(attr);
+    el.innerHTML=html; chatBody.appendChild(el);
+    if(buttons) el.querySelectorAll('.aibtn').forEach((btn)=>btn.addEventListener('click',()=>buttons[+btn.dataset.i].fn()));
+    scrollDown();
+    return el;
+  }
+
+  // AI bubble from raw model text (parses BUTTONS, adds disclaimer/escalation)
+  function addAI(raw, neg){
+    let text=raw, buttons=[];
+    const m = raw.match(/BUTTONS:\s*(\[[\s\S]*?\])/i);
+    if(m){ try{ buttons=JSON.parse(m[1]); }catch(e){ buttons=[]; } text=raw.replace(m[0],'').trim(); }
+    const el=document.createElement('div'); el.className='msg ai';
+    let html=`<div class="bubble">${fmt(text)}</div>`;
+    if(buttons.length) html+=`<div class="aibtns">`+buttons.map(b=>`<button class="aibtn tap" data-text="${escAttr(b)}">${esc(b)}</button>`).join('')+`</div>`;
+    if(needsDisclaimer(raw)) html+=disclaimerHTML(FIX2_DISC);
+    html+=actionsRow(attrFor(raw));
+    if(neg) html+=escalHTML();
+    el.innerHTML=html; chatBody.appendChild(el);
+    el.querySelectorAll('.aibtn').forEach(b=>b.addEventListener('click',()=>sendMessage(b.dataset.text)));
+    const eb=el.querySelector('.escalBtn'); if(eb) eb.addEventListener('click',()=>showToast("Запрос отправлен. Оператор ответит в течение 5 минут."));
+    scrollDown();
+  }
+
+  function addError(detail){
+    const el=document.createElement('div'); el.className='msg ai';
+    el.innerHTML=`<div class="errcard"><div>Что-то пошло не так 😔 Попробуйте ещё раз или напишите нам в WhatsApp: +7 707 000 07 07</div><div class="det">${esc(detail||'')}</div><button class="retry tap">Попробовать снова</button></div>`;
+    chatBody.appendChild(el);
+    el.querySelector('.retry').addEventListener('click',()=>{ el.remove(); runAI(lastNeg); });
+    scrollDown();
+  }
+
+  async function runAI(neg){
+    lastNeg=neg;
+    const thinking=showThinking();
+    try{
+      const reply=await sendToAI(messages,userState);
+      thinking.remove(); messages.push({role:'assistant',content:reply}); addAI(reply,neg);
+    }catch(err){
+      thinking.remove(); console.error("[Tele2 AI] request failed:",err); addError(err&&err.message?err.message:String(err));
+    }
+  }
+
+  function sendMessage(text){
+    text=(text||'').trim(); if(!text) return;
+    closeSheet();                       // FIX 1
+    addUser(text);
+    messages.push({role:'user',content:text});
+    runAI(isNegative(text));
+  }
+
+  /* ===================== Scripted flows ===================== */
+  // FLOW 2 — Автопополнение (chat → form hybrid)
+  function startAutoTopup(){
+    addUser("Настроить автопополнение");
+    addBubbleButtons("Автопополнение само пополнит счёт, чтобы связь не отключалась 👌\n\nНастроить автопополнение для связи или для услуг?","≡ Tele2",
+      [{label:"📱 Связь",fn:()=>autoStepB("📱 Связь")},{label:"🛜 Услуги",fn:()=>autoStepB("🛜 Услуги")}]);
+  }
+  function autoStepB(choice){
+    addUser(choice);
+    addBubbleButtons("Когда пополнять — по тарифу или по балансу?\n\n• **По тарифу** — пополняем на стоимость тарифа в день списания\n• **По балансу** — пополняем, когда баланс ниже порога","≡ Tele2",
+      [{label:"По тарифу",fn:()=>{addUser("По тарифу");openAutoForm('tariff');}},{label:"По балансу",fn:()=>{addUser("По балансу");openAutoForm('balance');}}]);
+  }
+
+  // FLOW 3 — Верификация IMEI (chat → action card)
+  function startImei(){
+    addUser("Верификация IMEI");
+    const text="С 25 марта 2025 года в Казахстане нужно верифицировать IMEI-коды устройств с SIM-картами.\n\nЕсли этого не сделать — связь может заблокироваться: нельзя будет звонить, пользоваться мобильным интернетом и отправлять SMS.\n\nПроверить статус и зарегистрировать устройство можно через eGov.";
+    const action=`<div class="action-card"><button class="dark-btn tap imeiEgov">Верифицировать через eGov</button><button class="ghost-btn tap">Подробнее о верификации</button></div>`+disclaimerHTML("**В реальном продукте** кнопка открывает eGov через deeplink.");
+    const el=addBubbleButtons(text,"≡ Tele2",null,action);
+    const b=el.querySelector('.imeiEgov'); if(b) b.addEventListener('click',()=>showToast("Переход в приложение eGov..."));
+  }
+
+  /* ===================== Modal (forms + product detail) ===================== */
+  function openModal(html, full){
+    modalInner.innerHTML=html;
+    modal.classList.toggle('full',!!full);
+    modal.classList.add('open'); modalBack.classList.add('open');
+  }
+  function closeModal(){ modal.classList.remove('open'); modalBack.classList.remove('open'); }
+  modalBack.addEventListener('click',closeModal);
+
+  function successHTML(title, disc){
+    return `<div class="handle-bar"></div><div class="m-body success">
+      <div class="check">✓</div><div class="s-title">${esc(title)}</div>
+      ${disclaimerHTML(disc)}
+      <button class="primary-btn active sDone" style="margin-top:8px">Готово</button></div>`;
+  }
+  function showSuccess(title, disc, full){ openModal(successHTML(title,disc), full); modalInner.querySelector('.sDone').addEventListener('click',closeModal); }
+
+  // FLOW 1 — Пополнение баланса (pure form)
+  function openTopupForm(){
+    openModal(`<div class="handle-bar"></div>
+      <div class="m-head"><button class="m-back tap">${backSvg}</button><div class="m-title">Пополнение баланса</div><span style="width:36px"></span></div>
+      <div class="m-body">
+        <div class="field"><div class="f-label">Номер</div><div class="f-row"><div class="f-val">+7 (701) 234 56 78</div><span class="f-ic">👤</span></div></div>
+        <div class="f-hint">Ваш баланс: 2 960 ₸</div>
+        <div class="field"><div class="f-label">Сумма</div><input id="topupAmount" class="f-input" inputmode="numeric" placeholder="Введите сумму"></div>
+        <div class="f-hint">От 100 до 40 000 ₸</div>
+        <div class="pills">${[1000,2000,5000,10000].map(a=>`<button class="amt-pill tap" data-amt="${a}">${fmtNum(a)} ₸</button>`).join('')}</div>
+        <div class="field f-select"><div><div class="f-label">С карты</div><div class="f-val">440043******1857</div></div><span class="chev">⌄</span></div>
+        <button class="primary-btn" id="topupSubmit" disabled>Пополнить</button>
+      </div>`);
+    const inp=modalInner.querySelector('#topupAmount'), btn=modalInner.querySelector('#topupSubmit');
+    function refresh(){ const v=parseInt((inp.value||'').replace(/\D/g,''),10)||0; const ok=v>=100&&v<=40000; btn.disabled=!ok; btn.classList.toggle('active',ok); }
+    inp.addEventListener('input',refresh);
+    modalInner.querySelectorAll('.amt-pill').forEach(p=>p.addEventListener('click',()=>{ inp.value=p.dataset.amt; refresh(); }));
+    modalInner.querySelector('.m-back').addEventListener('click',closeModal);
+    btn.addEventListener('click',()=>{ const v=parseInt(inp.value.replace(/\D/g,''),10); showSuccess("Баланс пополнен на "+fmtNum(v)+" ₸","Для реального пополнения нужна интеграция с платёжным провайдером Tele2 (Halyk Bank)"); });
+  }
+
+  // FLOW 2 form — Новое автопополнение
+  function openAutoForm(kind){
+    const num=`<div class="field"><div class="f-label">Номер</div><div class="f-row"><div class="f-val">+7 (701) 234 56 78</div><span class="f-ic">👤</span></div></div><div class="f-hint">Баланс: 2 960 ₸</div>`;
+    const card=`<div class="field f-select"><div><div class="f-label">С карты</div><div class="f-val">440043******1857</div></div><span class="chev">⌄</span></div>`;
+    const body = kind==='tariff'
+      ? num+`<div class="info-line"><span>Тариф</span><b>Безлимит по полной</b></div><div class="info-line"><span>Следующее списание</span><b>13 июля 2026</b></div>`+card
+      : num+`<div class="field"><div class="f-label">Пополнять когда баланс ниже</div><input class="f-input" value="500 ₸"></div><div class="field"><div class="f-label">Сумма пополнения</div><input class="f-input" value="3 000 ₸"></div>`+card;
+    openModal(`<div class="handle-bar"></div>
+      <div class="m-head"><button class="m-back tap">${backSvg}</button><div class="m-title">Новое автопополнение</div><span style="width:36px"></span></div>
+      <div class="m-body">${body}<button class="primary-btn active autoSubmit">Добавить автопополнение</button></div>`);
+    modalInner.querySelector('.m-back').addEventListener('click',closeModal);
+    modalInner.querySelector('.autoSubmit').addEventListener('click',()=>showSuccess("Автопополнение настроено","Требует интеграции с Tele2 и Halyk Bank для реальных списаний"));
+  }
+
+  /* ===================== E-commerce (CHANGE 3) ===================== */
+  const PRODUCTS={
+    a07:{name:"Galaxy A07 4/64GB Black",price:"59 990 ₸",inst:"Рассрочка от 2 500 ₸ × 24",emoji:"📱"},
+    ip15:{name:"iPhone 15 256GB Black",price:"536 990 ₸",inst:"Рассрочка от 22 375 ₸ × 24",emoji:"📱"}
+  };
+  function openProductDetail(id){
+    const p=PRODUCTS[id]; if(!p) return;
+    openModal(`
+      <div class="pd-top"><button class="pd-back tap">${backSvg}</button><button class="pd-info tap">ⓘ</button></div>
+      <div class="pd-image">${p.emoji}</div>
+      <div class="pd-dots"><span class="d on"></span><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span></div>
+      <div class="pd-body">
+        <div class="pd-name">${esc(p.name)}</div>
+        <div class="inst-badge">${esc(p.inst)}</div>
+        <div class="pd-sec">Цвет</div>
+        <div class="color-row"><button class="color sel" style="background:#222"></button><button class="color" style="background:#3a7d44"></button></div>
+        <div class="pd-sec">Память</div>
+        <div class="store-row"><button class="store-pill sel">64 GB</button></div>
+        <div class="pd-sec">Выберите тариф</div>
+        <div class="pd-sub">Срок контракта (мес.)</div>
+        <div class="contract-row">${[6,12,18,24].map(mo=>`<button class="contract ${mo===12?'sel':''}">${mo}</button>`).join('')}</div>
+        <div class="tariff-scroll">
+          <div class="tcard-blue"><div class="tcb-head"><span>Для своих S · 12 мес.</span><span>✓</span></div><div class="tcb-body"><div class="tcb-specs">30 ГБ · 120 МИН · 20 СМС</div><div class="tcb-type">Смартфон</div><div class="tcb-price">${esc(p.price)}</div></div></div>
+          <div class="tcard-blue"><div class="tcb-head"><span>Для своих M · 12 мес.</span></div><div class="tcb-body"><div class="tcb-specs">60 ГБ · 300 МИН · 50 СМС</div><div class="tcb-type">Смартфон</div><div class="tcb-price">${esc(p.price)}</div></div></div>
+        </div>
+      </div>
+      <div class="pd-foot"><button class="dark-btn pdOrder">Оформить заказ</button></div>`, true);
+    modalInner.querySelector('.pd-back').addEventListener('click',closeModal);
+    modalInner.querySelector('.pd-info').addEventListener('click',()=>showToast("Информация о товаре"));
+    bindGroup('.color'); bindGroup('.store-pill'); bindGroup('.contract');
+    modalInner.querySelector('.pdOrder').addEventListener('click',()=>showSuccess("Заказ оформлен","Для реального оформления нужна интеграция с витриной и складом Tele2", true));
+  }
+  function bindGroup(sel){ const els=[...modalInner.querySelectorAll(sel)]; els.forEach(el=>el.addEventListener('click',()=>{els.forEach(x=>x.classList.remove('sel'));el.classList.add('sel');})); }
+
+  /* ===================== Router (prompt / skill → form / scripted / chat) ===================== */
+  function routeAction(text){
+    const t=text.toLowerCase();
+    if(/пополнить баланс|пополнение баланс/.test(t)){ openTopupForm(); return true; }
+    if(/автопополн/.test(t)){ openChatFresh(); startAutoTopup(); return true; }
+    if(/верификац|imei|верифицировать устройств/.test(t)){ openChatFresh(); startImei(); return true; }
+    return false;
+  }
+
+  /* ===================== Open / close ===================== */
+  function openChatFresh(){ closeSheet(); messages=[]; chatBody.innerHTML=''; chatInput.value=''; chat.classList.add('open'); }
+  function closeChat(){ chat.classList.remove('open'); chatInput.blur(); messages=[]; }
+
+  $('omniBar').addEventListener('click',()=>{ openChatFresh(); setTimeout(()=>chatInput.focus(),200); });
+  $('chatBack').addEventListener('click',closeChat);
+  $('chatHome').addEventListener('click',closeChat);
+  $('newChat').addEventListener('click',()=>{ messages=[]; chatBody.innerHTML=''; chatInput.value=''; });
+
+  $('promptRows').addEventListener('click',e=>{
+    const b=e.target.closest('.prompt'); if(!b) return;
+    if(b.dataset.skills){ openSheet(); return; }
+    if(b.dataset.text){ if(routeAction(b.dataset.text)) return; openChatFresh(); sendMessage(b.dataset.text); }
+  });
+
+  function handleSend(){ const v=chatInput.value.trim(); if(!v) return; chatInput.value=''; sendMessage(v); }
+  $('sendBtn').addEventListener('click',handleSend);
+  chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') handleSend(); });
+
+  $('stateSwitch').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; userState=b.dataset.state; messages=[]; renderMain(); });
+
+  function openSheet(){ sheet.classList.add('open'); backdrop.classList.add('open'); }
+  function closeSheet(){ sheet.classList.remove('open'); backdrop.classList.remove('open'); }
+  backdrop.addEventListener('click',closeSheet);
+  $('sheetBody').addEventListener('click',e=>{
+    const row=e.target.closest('.skill-row'); if(!row || row.classList.contains('locked')) return;
+    const t=row.dataset.text; closeSheet();
+    setTimeout(()=>{ if(routeAction(t)) return; openChatFresh(); sendMessage(t); },180);
+  });
+
+  // feed clicks (products / promos)
+  $('feed').addEventListener('click',e=>{
+    const prod=e.target.closest('[data-product]'); if(prod){ openProductDetail(prod.dataset.product); return; }
+    const promo=e.target.closest('[data-promo]');
+    if(promo){ showToast(promo.dataset.promo==='testdrive'?"Демо: тест-драйв домашнего интернета":"Демо: страница акции «Домашний интернет»"); }
+  });
+
+  let toastTimer;
+  function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.classList.remove('show'),3000); }
+
+  renderMain();
+})();
+</script>
+</body>
+</html>
