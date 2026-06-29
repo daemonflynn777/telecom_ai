@@ -97,8 +97,8 @@ class ThreadedServer(ThreadingHTTPServer):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "8000"))
+    port = int(os.environ.get("PORT", "10000"))
     state = "SET ✓" if API_KEY else "NOT SET ✗  (export ANTHROPIC_API_KEY=...)"
     print(f"ANTHROPIC_API_KEY: {state}")
     print(f"Serving http://localhost:{port}/tele2-yandex-ai.html (threaded)")
-    ThreadedServer(("127.0.0.1", port), Handler).serve_forever()
+    ThreadedServer(("0.0.0.0", port), Handler).serve_forever()
